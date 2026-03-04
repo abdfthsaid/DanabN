@@ -18,13 +18,7 @@ const PAYMENT_FLOW_RESET_KEY = "caste:payment-flow-reset-home-form";
 const DEFAULT_AMOUNT = 0.5;
 const DEFAULT_METHOD: PaymentMethod = "EVC Plus";
 
-export function PaymentCard({
-  darkMode,
-  onToggleTheme,
-}: {
-  darkMode: boolean;
-  onToggleTheme: () => void;
-}) {
+export function PaymentCard() {
   const router = useRouter();
 
   const [selectedAmount, setSelectedAmount] = useState(DEFAULT_AMOUNT);
@@ -105,12 +99,12 @@ export function PaymentCard({
     <main
       className={cn(
         "relative mx-auto w-full max-w-md rounded-[28px] border p-5 shadow-[0_25px_70px_rgba(94,46,140,.25)] backdrop-blur-md",
-        darkMode ? "border-white/10 bg-[#181828]/90 text-white" : "border-white/60 bg-white/90 text-slate-800",
+        "border-white/60 bg-white/90 text-slate-800",
       )}
     >
-      <PaymentHeader darkMode={darkMode} onToggleTheme={onToggleTheme} />
+      <PaymentHeader />
 
-      <section className="rounded-2xl bg-white/60 pb-5 dark:bg-slate-900/20">
+      <section className="rounded-2xl bg-white/60 pb-5">
         <TimeOptions options={TIME_OPTIONS} selectedAmount={selectedAmount} onSelect={setSelectedAmount} />
 
         <AmountCard amount={selectedAmount} />
@@ -137,9 +131,9 @@ export function PaymentCard({
         <PayButton loading={isSubmitting} onClick={handlePay} />
       </section>
 
-      <footer className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
+      <footer className="mt-6 text-center text-sm text-slate-600">
         Call us any feedback or problem{" "}
-        <span className="font-semibold text-slate-900 dark:text-white">616586503 / 616251068</span>
+        <span className="font-semibold text-slate-900">616586503 / 616251068</span>
       </footer>
     </main>
   );

@@ -21,9 +21,9 @@ export function RulesAgreement({
         className={cn(
           "flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left transition",
           checked
-            ? "border-pink-400 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/25 dark:to-purple-900/25"
-            : "border-slate-200 bg-white hover:border-pink-200 dark:border-slate-600 dark:bg-slate-800 dark:hover:border-pink-600",
-          error && "border-red-400 dark:border-red-500",
+            ? "border-pink-400 bg-gradient-to-r from-pink-50 to-purple-50"
+            : "border-slate-200 bg-white hover:border-pink-200",
+          error && "border-red-400",
         )}
       >
         <span
@@ -31,18 +31,18 @@ export function RulesAgreement({
             "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2",
             checked
               ? "border-pink-500 bg-gradient-to-r from-pink-500 to-purple-500 text-white"
-              : "border-slate-300 bg-white text-transparent dark:border-slate-500 dark:bg-slate-700",
+              : "border-slate-300 bg-white text-transparent",
           )}
         >
           ✓
         </span>
         <span className="flex flex-col">
-          <span className="text-sm font-semibold text-slate-700 dark:text-slate-100">Waan ogolahay</span>
+          <span className="text-sm font-semibold text-slate-700">Waan ogolahay</span>
           <Link
             href="/rules"
             target="_blank"
             onClick={(event) => event.stopPropagation()}
-            className="text-xs font-medium text-pink-500 underline decoration-dotted underline-offset-2 hover:text-pink-600 dark:text-pink-300"
+            className="text-xs font-medium text-pink-500 underline decoration-dotted underline-offset-2 hover:text-pink-600"
           >
             Shuruudaha iyo xeerarka isticmaalka Danab
           </Link>

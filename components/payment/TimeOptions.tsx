@@ -35,8 +35,8 @@ export function TimeOptions({
               className={cn(
                 "relative rounded-xl p-4 text-center shadow-sm transition hover:scale-[1.02]",
                 isSelected
-                  ? "border-2 border-pink-500 bg-white dark:bg-slate-700"
-                  : "border border-transparent bg-slate-100/80 dark:bg-slate-700/70",
+                  ? "border-2 border-pink-500 bg-white"
+                  : "border border-transparent bg-slate-100/80",
               )}
             >
               {time.icon === "clock" ? <ClockIcon /> : <TimerIcon />}
@@ -44,7 +44,7 @@ export function TimeOptions({
               <p
                 className={cn(
                   "text-sm font-bold",
-                  isSelected ? "text-pink-500" : "text-slate-700 dark:text-slate-200",
+                  isSelected ? "text-pink-500" : "text-slate-700",
                 )}
               >
                 {time.label}
@@ -52,7 +52,7 @@ export function TimeOptions({
               <p
                 className={cn(
                   "text-xs",
-                  isSelected ? "text-pink-400" : "text-slate-500 dark:text-slate-300",
+                  isSelected ? "text-pink-400" : "text-slate-500",
                 )}
               >
                 {formatAmount(time.amount)}
