@@ -4,8 +4,6 @@ import { isHttpError, processPayment } from "@/lib/server/payment-service";
 import { checkRateLimit } from "@/lib/server/rate-limit";
 import { getClientIp } from "@/lib/server/request";
 
-export const runtime = "nodejs";
-
 type PaymentRequestBody = {
   phoneNumber?: string;
   amount?: number;

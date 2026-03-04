@@ -1,41 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { AmountCard } from "@/components/payment/AmountCard";
-import {
-  DEFAULT_PAYMENT_RESULT,
-  PAYMENT_METHODS,
-  PHONE_PLACEHOLDER_BY_METHOD,
-  TIME_OPTIONS,
-} from "@/components/payment/constants";
-import { cn, mapBackendErrorMessage, normalizePhone, validatePaymentInput } from "@/components/payment/helpers";
+import { PAYMENT_METHODS, PHONE_PLACEHOLDER_BY_METHOD, TIME_OPTIONS } from "@/components/payment/constants";
+import { cn, normalizePhone, validatePaymentInput } from "@/components/payment/helpers";
 import { MethodPicker } from "@/components/payment/MethodPicker";
 import { PayButton } from "@/components/payment/PayButton";
 import { PaymentHeader } from "@/components/payment/PaymentHeader";
-import { PaymentModal } from "@/components/payment/PaymentModal";
 import { PhoneInput } from "@/components/payment/PhoneInput";
 import { RulesAgreement } from "@/components/payment/RulesAgreement";
 import { TimeOptions } from "@/components/payment/TimeOptions";
-import { PaymentMethod, PaymentResult } from "@/components/payment/types";
+import { PaymentMethod } from "@/components/payment/types";
 
-type ApiResponse = {
-  success?: boolean;
-  error?: string;
-  blacklisted?: boolean;
-  battery_id?: string;
-  slot_id?: string;
-  waafiMessage?: string;
-};
-
-async function safeReadJson(response: Response): Promise<ApiResponse> {
-  try {
-    const data = (await response.json()) as ApiResponse;
-    return data;
-  } catch {
-    return {};
-  }
-}
+const PAYMENT_FLOW_RESET_KEY = "caste:payment-flow-reset-home-form";
+const DEFAULT_AMOUNT = 0.5;
+const DEFAULT_METHOD: PaymentMethod = "EVC Plus";
 
 export function PaymentCard({
   darkMode,
@@ -44,33 +25,58 @@ export function PaymentCard({
   darkMode: boolean;
   onToggleTheme: () => void;
 }) {
-  const [selectedAmount, setSelectedAmount] = useState(0.5);
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("EVC Plus");
+  const router = useRouter();
+
+  const [selectedAmount, setSelectedAmount] = useState(DEFAULT_AMOUNT);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(DEFAULT_METHOD);
   const [phone, setPhone] = useState("");
   const [agreeRules, setAgreeRules] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ phone?: string; agreeRules?: string }>({});
-  const [paymentResult, setPaymentResult] = useState<PaymentResult>(DEFAULT_PAYMENT_RESULT);
-
-  const successResetTimerRef = useRef<number | null>(null);
-
-  const clearSuccessTimer = () => {
-    if (successResetTimerRef.current !== null) {
-      window.clearTimeout(successResetTimerRef.current);
-      successResetTimerRef.current = null;
-    }
-  };
 
   useEffect(() => {
-    return () => clearSuccessTimer();
-  }, []);
+    router.prefetch("/payment");
 
-  const closeModal = () => {
-    clearSuccessTimer();
-    setPaymentResult(DEFAULT_PAYMENT_RESULT);
-  };
+    const resetForm = () => {
+      setSelectedAmount(DEFAULT_AMOUNT);
+      setSelectedMethod(DEFAULT_METHOD);
+      setPhone("");
+      setAgreeRules(true);
+      setErrors({});
+      setIsSubmitting(false);
+    };
 
-  const handlePay = async () => {
+    const maybeResetOnReturnFromPayment = () => {
+      if (window.sessionStorage.getItem(PAYMENT_FLOW_RESET_KEY) === "1") {
+        window.sessionStorage.removeItem(PAYMENT_FLOW_RESET_KEY);
+        resetForm();
+        return;
+      }
+
+      setIsSubmitting(false);
+    };
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        maybeResetOnReturnFromPayment();
+      }
+    };
+
+    maybeResetOnReturnFromPayment();
+    window.addEventListener("pageshow", maybeResetOnReturnFromPayment);
+    window.addEventListener("focus", maybeResetOnReturnFromPayment);
+    window.addEventListener("popstate", maybeResetOnReturnFromPayment);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pageshow", maybeResetOnReturnFromPayment);
+      window.removeEventListener("focus", maybeResetOnReturnFromPayment);
+      window.removeEventListener("popstate", maybeResetOnReturnFromPayment);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [router]);
+
+  const handlePay = () => {
     if (isSubmitting) {
       return;
     }
@@ -85,89 +91,14 @@ export function PaymentCard({
     const cleanPhone = normalizePhone(phone);
 
     setIsSubmitting(true);
-    setPaymentResult({
-      ...DEFAULT_PAYMENT_RESULT,
-      open: true,
-      status: "processing",
-      statusMessage: "Hubinaya macluumaadka...",
+    window.sessionStorage.setItem(PAYMENT_FLOW_RESET_KEY, "1");
+    const params = new URLSearchParams({
+      phone: cleanPhone,
+      amount: String(selectedAmount),
+      method: selectedMethod,
     });
 
-    try {
-      const blacklistRes = await fetch(`/api/blacklist/check/${encodeURIComponent(cleanPhone)}`);
-      const blacklistData = await safeReadJson(blacklistRes);
-
-      if (!blacklistRes.ok) {
-        throw new Error(blacklistData.error || "Failed to check blacklist status");
-      }
-
-      if (blacklistData.blacklisted) {
-        setPaymentResult((prev) => ({
-          ...prev,
-          status: "failed",
-          statusMessage: "",
-          errorMessage: "Macamiil waxa kugu maqan battery hore fadlan soo celi midkaas",
-        }));
-        return;
-      }
-
-      setPaymentResult((prev) => ({ ...prev, statusMessage: "Diraya lacagta... Fadlan sug" }));
-
-      const paymentRes = await fetch("/api/pay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phoneNumber: cleanPhone,
-          amount: selectedAmount,
-          method: selectedMethod,
-        }),
-      });
-
-      const paymentData = await safeReadJson(paymentRes);
-
-      if (paymentRes.ok && paymentData.success) {
-        setPaymentResult((prev) => ({
-          ...prev,
-          status: "success",
-          statusMessage: "",
-          waafiMessage: paymentData.waafiMessage || "Lacag bixinta waa guulaysatay!",
-          batteryInfo:
-            paymentData.battery_id && paymentData.slot_id
-              ? {
-                  batteryId: paymentData.battery_id,
-                  slotId: paymentData.slot_id,
-                }
-              : null,
-        }));
-
-        setPhone("");
-        setAgreeRules(false);
-        setErrors({});
-
-        clearSuccessTimer();
-        successResetTimerRef.current = window.setTimeout(() => {
-          setPaymentResult(DEFAULT_PAYMENT_RESULT);
-        }, 5000);
-        return;
-      }
-
-      const backendError = mapBackendErrorMessage(paymentData.error || "Khalad dhacay, fadlan mar kale isku day");
-      setPaymentResult((prev) => ({
-        ...prev,
-        status: "failed",
-        statusMessage: "",
-        errorMessage: backendError,
-      }));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Network error, fadlan mar kale isku day.";
-      setPaymentResult((prev) => ({
-        ...prev,
-        status: "failed",
-        statusMessage: "",
-        errorMessage: message,
-      }));
-    } finally {
-      setIsSubmitting(false);
-    }
+    router.push(`/payment?${params.toString()}`);
   };
 
   return (
@@ -177,8 +108,6 @@ export function PaymentCard({
         darkMode ? "border-white/10 bg-[#181828]/90 text-white" : "border-white/60 bg-white/90 text-slate-800",
       )}
     >
-      <PaymentModal result={paymentResult} onClose={closeModal} />
-
       <PaymentHeader darkMode={darkMode} onToggleTheme={onToggleTheme} />
 
       <section className="rounded-2xl bg-white/60 pb-5 dark:bg-slate-900/20">

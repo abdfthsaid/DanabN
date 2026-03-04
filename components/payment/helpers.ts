@@ -28,6 +28,8 @@ export function validatePaymentInput(phone: string, agreeRules: boolean): Paymen
 }
 
 export function mapBackendErrorMessage(message: string) {
+  const lowerMessage = message.toLowerCase();
+
   if (message.includes("No available battery")) {
     return "Ma jiro baytari diyaar ah hadda, fadlan mar kale isku day";
   }
@@ -46,6 +48,14 @@ export function mapBackendErrorMessage(message: string) {
 
   if (message.includes("Payment not approved")) {
     return "Lacag bixinta ma dhicin, fadlan hubi numberkaaga";
+  }
+
+  if (lowerMessage.includes("timed out") || lowerMessage.includes("timeout")) {
+    return "Waqtigii codsiga wuu dhamaaday. Fadlan mar kale isku day.";
+  }
+
+  if (lowerMessage.includes("abort")) {
+    return "Codsiga waa la joojiyay. Fadlan mar kale isku day.";
   }
 
   return message || "Khalad dhacay, fadlan mar kale isku day";

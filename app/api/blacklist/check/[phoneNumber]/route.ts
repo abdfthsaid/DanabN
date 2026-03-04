@@ -4,8 +4,6 @@ import { isPhoneBlacklisted } from "@/lib/server/payment-service";
 import { getClientIp } from "@/lib/server/request";
 import { checkRateLimit } from "@/lib/server/rate-limit";
 
-export const runtime = "nodejs";
-
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ phoneNumber: string }> },

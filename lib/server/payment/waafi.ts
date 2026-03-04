@@ -3,6 +3,8 @@ import { getRequiredEnv } from "@/lib/server/env";
 import { parseResponseBody, toErrorMessage } from "@/lib/server/payment/http";
 import { WaafiResponse } from "@/lib/server/payment/types";
 
+const WAAFI_REQUEST_TIMEOUT_MS = 20_000;
+
 export async function requestWaafiPayment({
   phoneNumber,
   amount,
@@ -32,14 +34,31 @@ export async function requestWaafiPayment({
     },
   };
 
-  const response = await fetch(getRequiredEnv("WAAFI_URL"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, WAAFI_REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(getRequiredEnv("WAAFI_URL"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Waafi request timed out");
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const responsePayload = (await parseResponseBody(response)) as WaafiResponse | string | null;
 

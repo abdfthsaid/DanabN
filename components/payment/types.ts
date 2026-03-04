@@ -1,18 +1,7 @@
 export type PaymentMethod = "EVC Plus" | "ZAAD" | "SAHAL";
 
 export type PaymentStatus = "processing" | "success" | "failed";
-
-export type PaymentResult = {
-  open: boolean;
-  status: PaymentStatus;
-  statusMessage: string;
-  errorMessage: string;
-  waafiMessage: string;
-  batteryInfo: {
-    batteryId: string;
-    slotId: string;
-  } | null;
-};
+export type ProcessingStep = "verify" | "charge" | "unlock";
 
 export type PaymentErrors = {
   phone?: string;
